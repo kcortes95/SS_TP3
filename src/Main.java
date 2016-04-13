@@ -6,6 +6,8 @@ import java.util.TreeMap;
 
 public class Main {
 
+	private static final int MAX_MASS = 15;
+
 	public static void main(String[] args) throws InterruptedException {
 		int runs = 20;
 		int L = 40;
@@ -42,7 +44,7 @@ public class Main {
 		double speed = 0.3;
 		Set<Particle> set = new HashSet<Particle>();
 		for(int i=1 ; i<=N;i++){
-			set.add(new Particle(radius, Color.RED, Math.random()*L, Math.random()*L, new Velocity(speed, Math.random()*(2*Math.PI))));
+			set.add(new Particle(radius, Color.RED, Math.random()*MAX_MASS, Math.random()*L, Math.random()*L, new Velocity(speed, Math.random()*(2*Math.PI))));
 		}
 		return set;
 	}
