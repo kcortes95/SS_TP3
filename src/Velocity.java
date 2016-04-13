@@ -29,4 +29,8 @@ public class Velocity {
 		this.angle = ang;
 	}
 	
+	public void setSpeed(double speed){
+		this.speed = speed;
+	}
+	
 }
