@@ -9,16 +9,17 @@ public class Main {
 	private static final int MAX_MASS = 15;
 
 	public static void main(String[] args) throws InterruptedException {
-		int runs = 20;
 		int L = 40;
 		int N = 400;
 		double Rc = 1;
 		double noise = 0;
+		
 		Map<Double,Set<Particle>> map = new TreeMap<>();
 		Set<Particle> set = ParticleGenerator(N,L);
 		Grid grid = new CircularGrid(L, getM(L,Rc), set);
+		
 		Simulation s = new Simulation(grid, 500,1,Rc,noise,set);
-		double vA = s.run();
+		s.run();
 		
 		Input.readParticles(N, "output.txt", map);
 		
