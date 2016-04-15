@@ -3,8 +3,8 @@ import java.util.Set;
 
 public class CircularGrid extends Grid{
 	
-	public CircularGrid(double L, int M, Set<Particle> particles){
-		super(L,M,particles);
+	public CircularGrid(double L, int M){
+		super(L,M);
 	}
 	
 	public void calculateNeighbours(){

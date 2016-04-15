@@ -6,10 +6,8 @@ import java.util.TreeMap;
 public class Simulation {
 	
 	private Grid grid;
-	private double Rc;
 	private double totalTime;
 	private double intervals;
-	private double noiseAmp;
 	private Set<Particle> particles;
 	private Map<Particle,Set<Particle>> condition = new TreeMap<>();
 	
@@ -19,15 +17,13 @@ public class Simulation {
 	 * @param totalTime - Total simulation runtime in seconds
 	 * @param intervals - Time in between calculation periods in seconds
 	 */
-	public Simulation(Grid grid, double totalTime, double intervals, double Rc, double noiseAmp, Set<Particle> set){
+	public Simulation(Grid grid, double totalTime, double intervals){
 		if(totalTime<0 || intervals<0 || intervals>totalTime)
 			throw new IllegalArgumentException("Invalid time parameters");
 		this.grid = grid;
 		this.totalTime = totalTime;
 		this.intervals = intervals;
-		this.Rc = Rc;
-		this.noiseAmp = noiseAmp;
-		this.particles = set;
+		this.particles = grid.getParticles();
 	}
 	
 	
@@ -44,17 +40,17 @@ public class Simulation {
 	
 	private void simulate(){
 		condition.clear();
-		calculateNeighbours();
-		updateParticles();
+		//calculateNeighbours();
+		//updateParticles();
 	}
 	
-	private void updateParticles(){
+	/*private void updateParticles(){
 		for(Particle p: particles){
 			updatePosition(p);
 			double avAngle = getAverageAngle(p);
 			p.setAngle(avAngle + (Math.random()-0.5)*noiseAmp);
 		}
-	}
+	}*/
 	
 	private double getAverageAngle(Particle p){
 		double totalSin = Math.sin(p.getV().getAngle());
@@ -70,7 +66,7 @@ public class Simulation {
 		return Math.atan2(totalSin,totalCos);
 	}
 	
-	private void calculateNeighbours(){
+	/*private void calculateNeighbours(){
 		int M = grid.getM();
 		for(int i=0; i<M; i++){
 			for(int j=0; j<M; j++){
@@ -95,7 +91,7 @@ public class Simulation {
 				}
 			}
 		}
-	}
+	}*/
 	
 	private void updatePosition(Particle p){
 		double cellLength = grid.getL()/grid.getM();
@@ -130,10 +126,6 @@ public class Simulation {
 		if(!condition.containsKey(p1))
 			condition.put(p1, new HashSet<Particle>());
 		condition.get(p1).add(p2);
-	}
-	
-	private double getDistance(Particle p1, Particle p2){
-		return Math.sqrt(Math.pow(p1.getPosition().getX()-p2.getPosition().getX(), 2) + Math.pow(p1.getPosition().getY()-p2.getPosition().getY(), 2))-p1.getradius()-p2.getradius();
 	}
 	
 	private boolean areTouched(Particle p1, Particle p2){

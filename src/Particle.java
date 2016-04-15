@@ -11,8 +11,8 @@ public class Particle implements Comparable<Particle>{
 	private double mass;
 	private Color color;
 	
-	public Particle(double radius, Color color, double mass, double x, double y, Velocity v) {
-		this.pos = new Position(x,y);
+	public Particle(double radius, Color color, double mass, Position pos, Velocity v) {
+		this.pos = pos;
 		this.v = v;
 		this.radius = radius;
 		this.color = color;
@@ -61,7 +61,7 @@ public class Particle implements Comparable<Particle>{
 	}
 	
 	public String toString(){
-		return "" + ID;
+		return "" + ID + " " + radius;
 	}
 
 	@Override
@@ -102,7 +102,9 @@ public class Particle implements Comparable<Particle>{
 		p.getV().setAngle(Math.atan2(fvy1, fvx1));
 		this.getV().setSpeed(Math.sqrt(Math.pow(fvx2, 2)+ Math.pow(fvy2,2)));
 		this.getV().setAngle(Math.atan2(fvy2, fvx2));
-		
-		
+	}
+	
+	public double getDistance(Particle other){
+		return Math.sqrt(Math.pow(pos.getX()-other.getPosition().getX(), 2) + Math.pow(pos.getY()-other.getPosition().getY(), 2))-radius-other.getradius();
 	}
 }

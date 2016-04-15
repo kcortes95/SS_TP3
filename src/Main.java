@@ -4,59 +4,34 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
+import javax.annotation.Generated;
+
 public class Main {
 
-	private static final int MAX_MASS = 15;
+	private static final double L = 0.5;
+	private static final int N = 1000;
+	private static final double m = 1;
+	private static final double Mbig = 100;
+	private static final double r = 0.005;
+	private static final double Rbig = 0.05;
+	private static final double maxV = 0.1;
 
 	public static void main(String[] args) throws InterruptedException {
-		int L = 40;
-		int N = 400;
-		double Rc = 1;
-		double noise = 0;
 		
-		Map<Double,Set<Particle>> map = new TreeMap<>();
-		Set<Particle> set = ParticleGenerator(N,L);
-		Grid grid = new CircularGrid(L, getM(L,Rc), set);
+		Particle P = new Particle(Rbig, Color.RED, Mbig, generateRandomPos(Rbig), new Velocity(0,0));
+		Grid grid = new CircularGrid(L, 1);
+		grid.getParticles().add(P);
 		
-		Simulation s = new Simulation(grid, 500,1,Rc,noise,set);
+		grid.generateParticles(maxV, r, m, N);
+		
+		Simulation s = new Simulation(grid, 1,1);
 		s.run();
-		
-		Input.readParticles(N, "output.txt", map);
-		
-		Set<Double> times = map.keySet();
-		OnScreen screen = new OnScreen(L, 800, 600);
-		Thread.sleep(500);
-		for(Double t : times){
-			Thread.sleep(200);
-			Set<Particle> parts = map.get(t);
-			screen.draw(parts);
-			
-			try {
-				//screen.captureScreen();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-
-		}
 	}
 
-	private static Set<Particle> ParticleGenerator(int N, int L){
-		double radius = 0;
-		double speed = 0.3;
-		Set<Particle> set = new HashSet<Particle>();
-		for(int i=1 ; i<=N;i++){
-			set.add(new Particle(radius, Color.RED, Math.random()*MAX_MASS, Math.random()*L, Math.random()*L, new Velocity(speed, Math.random()*(2*Math.PI))));
-		}
-		return set;
+	private static Position generateRandomPos(double r){
+		double x = (Math.random() * (L-2*r)) + r;
+		double y = (Math.random() * (L-2*r)) + r;
+		return new Position(x,y);
 	}
 	
-	
-	// ASUMIMOS QUE RMAX ES 0 PORQUE SON PUNTUALES
-	private static int getM(int L, double rc){
-		int max = (int)(L/rc);
-		while(L%max != 0){
-			max--;
-		}
-		return max;
-	}
 }
