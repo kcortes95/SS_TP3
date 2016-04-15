@@ -24,7 +24,7 @@ public class Particle implements Comparable<Particle>{
 		return v;
 	}
 	
-	public double getmass() {
+	public double getMass() {
 		return mass;
 	}
 	

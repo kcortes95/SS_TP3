@@ -3,7 +3,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 
-
 public class Simulation {
 	
 	private Grid grid;
@@ -134,7 +133,28 @@ public class Simulation {
 	}
 	
 	private double getDistance(Particle p1, Particle p2){
-		return Math.sqrt(Math.pow(p1.getPosition().getX()-p2.getPosition().getX(), 2) + Math.pow(p1.getPosition().getY()-p2.getPosition().getY(), 2))-p1.getRadio()-p2.getRadio();
+		return Math.sqrt(Math.pow(p1.getPosition().getX()-p2.getPosition().getX(), 2) + Math.pow(p1.getPosition().getY()-p2.getPosition().getY(), 2))-p1.getradius()-p2.getradius();
+	}
+	
+	private boolean areTouched(Particle p1, Particle p2){
+
+		double distance = Math.pow(Math.pow(p1.getPosition().getX() - p2.getPosition().getX(), 2) + Math.pow(p1.getPosition().getY() - p2.getPosition().getY(), 2), 0.5);
+		
+		if (p2.getradius() >= p1.getradius() && distance <= (p2.getradius() - p1.getradius())) {
+			System.out.println("Circle 1 is inside Circle 2.");
+		} else if (p1.getradius() >= p2.getradius() && distance <= (p1.getradius() - p2.getradius())) {
+			System.out.println("Circle 2 is inside Circle 1.");
+		} else if (distance > (p1.getradius() + p2.getradius())) {
+			System.out.println("Circle 2 does not overlap Circle 1.");
+		} else {
+			System.out.println("Circle 2 overlaps Circle 1.");
+		}
+		
+		if(distance > (p1.getradius() + p2.getradius()))
+			return false;
+		
+		return true;
+		
 	}
 	
 	private double calculateVa(){
