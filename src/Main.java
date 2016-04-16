@@ -9,7 +9,7 @@ import javax.annotation.Generated;
 public class Main {
 
 	private static final double L = 0.5;
-	private static final int N = 1000;
+	private static final int N = 20;
 	private static final double m = 1;
 	private static final double Mbig = 100;
 	private static final double r = 0.005;
@@ -19,12 +19,12 @@ public class Main {
 	public static void main(String[] args) throws InterruptedException {
 		
 		Particle P = new Particle(Rbig, Color.RED, Mbig, generateRandomPos(Rbig), new Velocity(0,0));
-		Grid grid = new CircularGrid(L, 1);
+		Grid grid = new LinearGrid(L, 1);
 		grid.getParticles().add(P);
 		
 		grid.generateParticles(maxV, r, m, N);
 		
-		Simulation s = new Simulation(grid, 1,1);
+		Simulation s = new Simulation(grid, 5);
 		s.run();
 	}
 

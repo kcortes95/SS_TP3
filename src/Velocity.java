@@ -2,15 +2,12 @@
 public class Velocity {
 
 	double speed;
-	double angle;
+	double xVel, yVel;
 	
 	public Velocity (double speed, double angle){
 		this.speed=speed;
-		this.angle= angle;
-	}
-	
-	public double getAngle() {
-		return angle;
+		this.xVel = speed * Math.cos(angle);
+		this.yVel = speed * Math.sin(angle);
 	}
 	
 	public double getSpeed() {
@@ -18,15 +15,19 @@ public class Velocity {
 	}
 	
 	public double getXVelocity(){
-		return speed* Math.cos(angle);
+		return xVel;
 	}
 	
 	public double getYVelocity(){
-		return speed* Math.sin(angle);
+		return yVel;
+	}
+
+	public void setXVel(double value){
+		this.xVel = value;
 	}
 	
-	public void setAngle(double ang){
-		this.angle = ang;
+	public void setYVel(double value){
+		this.yVel = value;
 	}
 	
 	public void setSpeed(double speed){

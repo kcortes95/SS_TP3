@@ -5,43 +5,123 @@ import java.util.TreeMap;
 
 public class Simulation {
 	
+	private static final int bruteForceRuns = 1000;
 	private Grid grid;
 	private double totalTime;
-	private double intervals;
+	private boolean brute;
+	private double averageTc;
 	private Set<Particle> particles;
-	private Map<Particle,Set<Particle>> condition = new TreeMap<>();
+	private Collision nextCol;
 	
 	/**
 	 * 
 	 * @param grid
 	 * @param totalTime - Total simulation runtime in seconds
-	 * @param intervals - Time in between calculation periods in seconds
 	 */
-	public Simulation(Grid grid, double totalTime, double intervals){
-		if(totalTime<0 || intervals<0 || intervals>totalTime)
+	public Simulation(Grid grid, double totalTime){
+		if(totalTime<0)
 			throw new IllegalArgumentException("Invalid time parameters");
 		this.grid = grid;
+		this.brute = true;
 		this.totalTime = totalTime;
-		this.intervals = intervals;
 		this.particles = grid.getParticles();
 	}
 	
 	
-	//returns va
-	public double run(){
+	public void run(){
+		int count = 0;
+		double tc = 0;
 		double time = 0;
 		while(time<=totalTime){
-			simulate();
+			System.out.println("time: " + time);
+			/*if(count++ >= bruteForceRuns){
+				brute = false;
+				averageTc = time/bruteForceRuns;
+			}*/
+			calculateTc();
+			simulate(nextCol.getTime());
 			Output.getInstace().write(particles,time);
-			time += intervals;
+			time += nextCol.getTime();
 		}
-		return calculateVa();
 	}
 	
-	private void simulate(){
-		condition.clear();
+	private void simulate(double time){
+		for(Particle p: particles){
+			if(!brute)
+				updateCell(p);
+			p.updatePos(time);
+		}
+		nextCol.collide();
 		//calculateNeighbours();
 		//updateParticles();
+	}
+	
+	private void calculateTc(){
+		//if(brute)
+			getBruteTc();
+		//else
+		//	getApproxTc();
+	}
+	
+	private void getBruteTc(){
+		Set<Particle> notChecked = new HashSet<>(particles);
+		double L = grid.getL();
+		Collision first = null;
+		for(Particle p: particles){
+			// First check for collisions with box
+			Collision localMin = null;
+			if(p.getV().getXVelocity()>0){
+				localMin = new WallCollision(p,new Position(-1,1),(L-p.getPosition().getX()-p.getradius())/p.getV().getXVelocity());
+			}else if(p.getV().getXVelocity()<0){
+				localMin = new WallCollision(p,new Position(-1,1),(p.getradius()-p.getPosition().getX()/(p.getV().getXVelocity()))); 
+			}
+			if(p.getV().getYVelocity()>0){
+				double yCollisionTime = (L-p.getPosition().getY()-p.getradius())/p.getV().getYVelocity();
+				if(localMin==null || yCollisionTime<localMin.getTime())
+					localMin = new WallCollision(p,new Position(1,-1),yCollisionTime);
+			}else if(p.getV().getYVelocity()<0){
+				double yCollisionTime = (p.getradius()-p.getPosition().getY()/(p.getV().getYVelocity()));
+				if(localMin == null || yCollisionTime<localMin.getTime())
+					localMin = new WallCollision(p,new Position(1,-1),yCollisionTime);
+			}
+			// Then check for collision with other particles
+			for(Particle p2: notChecked){
+				if(!p2.equals(p)){
+					Double crashTime = getCrashTime(p,p2);
+					if(localMin!=null && crashTime!=null && crashTime<localMin.getTime()){
+						localMin = new ParticlesCollision(p, p2, crashTime);
+					}
+				}
+			}
+			notChecked.remove(p);
+			if(first==null || (localMin != null && localMin.getTime() < first.getTime()))
+				first = localMin;
+		}
+		nextCol = first;
+	}
+	
+	private Double getCrashTime(Particle p1, Particle p2){
+		double sigma = p1.getradius()+p2.getradius();
+		Position r = new Position(p2.getPosition().getX()-p1.getPosition().getX(), p2.getPosition().getY()-p1.getPosition().getY());
+		Position v = new Position(p2.getV().getXVelocity()-p1.getV().getXVelocity(), p2.getV().getYVelocity()-p1.getV().getYVelocity());
+		if(scalarProduct(v, r)>=0)
+			return null;
+		double d = Math.pow(scalarProduct(v, r), 2) - scalarProduct(v, v)*(scalarProduct(r, r)-sigma*sigma);
+		if(d<0)
+			return null;
+		double ans = -(scalarProduct(v, r)+Math.sqrt(d))/scalarProduct(v, v);
+		if(ans>0)
+			return ans;
+		return null;
+	}
+	
+	private double getApproxTc(){
+		//TODO
+		return 0;
+	}
+	
+	private double scalarProduct(Position pos1, Position pos2){
+		return pos1.getX()*pos2.getX()+pos1.getY()*pos2.getY();
 	}
 	
 	/*private void updateParticles(){
@@ -52,19 +132,6 @@ public class Simulation {
 		}
 	}*/
 	
-	private double getAverageAngle(Particle p){
-		double totalSin = Math.sin(p.getV().getAngle());
-		double totalCos = Math.cos(p.getV().getAngle());
-		if(condition.containsKey(p)){
-			for(Particle n: condition.get(p)){
-				totalSin += Math.sin(n.getV().getAngle());
-				totalCos += Math.cos(n.getV().getAngle());
-			}
-			totalSin /= condition.get(p).size()+1;
-			totalCos /= condition.get(p).size()+1;
-		}
-		return Math.atan2(totalSin,totalCos);
-	}
 	
 	/*private void calculateNeighbours(){
 		int M = grid.getM();
@@ -93,11 +160,10 @@ public class Simulation {
 		}
 	}*/
 	
-	private void updatePosition(Particle p){
+	private void updateCell(Particle p){
 		double cellLength = grid.getL()/grid.getM();
 		double x = p.getPosition().getX();
 		double y = p.getPosition().getY();
-		p.updatePos(intervals);
 		int cellX = (int) Math.floor(x/cellLength);
 		int cellY = (int) Math.floor(y/cellLength);
 		int newCellX = (int)Math.floor(p.getPosition().getX()/cellLength);
@@ -122,41 +188,5 @@ public class Simulation {
 		}
 	}
 	
-	private void addToCondition(Particle p1, Particle p2){
-		if(!condition.containsKey(p1))
-			condition.put(p1, new HashSet<Particle>());
-		condition.get(p1).add(p2);
-	}
-	
-	private boolean areTouched(Particle p1, Particle p2){
-
-		double distance = Math.pow(Math.pow(p1.getPosition().getX() - p2.getPosition().getX(), 2) + Math.pow(p1.getPosition().getY() - p2.getPosition().getY(), 2), 0.5);
-		
-		if (p2.getradius() >= p1.getradius() && distance <= (p2.getradius() - p1.getradius())) {
-			System.out.println("Circle 1 is inside Circle 2.");
-		} else if (p1.getradius() >= p2.getradius() && distance <= (p1.getradius() - p2.getradius())) {
-			System.out.println("Circle 2 is inside Circle 1.");
-		} else if (distance > (p1.getradius() + p2.getradius())) {
-			System.out.println("Circle 2 does not overlap Circle 1.");
-		} else {
-			System.out.println("Circle 2 overlaps Circle 1.");
-		}
-		
-		if(distance > (p1.getradius() + p2.getradius()))
-			return false;
-		
-		return true;
-		
-	}
-	
-	private double calculateVa(){
-		double xVel = 0;
-		double yVel = 0;
-		for(Particle p: particles){
-			xVel += p.getV().getXVelocity();
-			yVel += p.getV().getYVelocity();
-		}
-		return Math.sqrt(xVel*xVel+yVel*yVel);
-	}
 
 }
