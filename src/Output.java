@@ -18,15 +18,15 @@ public class Output {
 		if(time == 0){
 			try{
 				PrintWriter pw = new PrintWriter("output.xyz");
-				pw.write((set.size()+4) + "\n");
-				//comment line
-				pw.write("Hola\n");
 				pw.close();
 			}catch (Exception e){
 				e.printStackTrace();
 			}
 		}
 		try(PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter("output.xyz", true)))) {
+			out.write((set.size()+4) + "\n");
+			//comment line
+			out.write("Hola\n");
 			out.write(25000 + "\t" + 0 + "\t" + 0 + "\t0\t0\t" + 0.005 + "\t0\t0\t0" + "\n");
 			out.write(25001 + "\t" + 0 + "\t" + 0.5 + "\t0\t0\t" + 0.005 + "\t0\t0\t0" + "\n");
 			out.write(25002 + "\t" + 0.5 + "\t" + 0 + "\t0\t0\t" + 0.005 + "\t0\t0\t0" + "\n");

@@ -68,6 +68,18 @@ public abstract class Grid {
 		return cells[x][y];
 	}
 	
+	public Cell getCell(Particle p){
+		int x = (int) (Math.floor(p.getPosition().getX()/(L/M)));
+		int y = (int) (Math.floor(p.getPosition().getY()/(L/M)));
+		try{
+			return cells[x][y];
+		}catch (Exception e){
+			System.out.println("x: " + p.getPosition().getX());
+			System.out.println("y: " + p.getPosition().getY());
+		}
+		return null;
+	}
+	
 	public Cell[][] getGrid(){
 		return cells;
 	}

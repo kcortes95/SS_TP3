@@ -12,16 +12,18 @@ public class Simulation {
 	private double averageTc;
 	private Set<Particle> particles;
 	private Collision nextCol;
+	private double initialSpeed;
 	
 	/**
 	 * 
 	 * @param grid
 	 * @param totalTime - Total simulation runtime in seconds
 	 */
-	public Simulation(Grid grid, double totalTime){
+	public Simulation(Grid grid, double totalTime, double initialSpeed){
 		if(totalTime<0)
 			throw new IllegalArgumentException("Invalid time parameters");
 		this.grid = grid;
+		this.initialSpeed = initialSpeed;
 		this.brute = true;
 		this.totalTime = totalTime;
 		this.particles = grid.getParticles();
@@ -30,18 +32,32 @@ public class Simulation {
 	
 	public void run(){
 		int count = 0;
-		double tc = 0;
 		double time = 0;
 		while(time<=totalTime){
-			System.out.println("time: " + time);
-			/*if(count++ >= bruteForceRuns){
+			double Ec = 0;
+			System.out.println("ENERGY:");
+			for(Particle p: particles)
+				Ec += 0.5*p.getMass()*p.getV().getSpeed()*p.getV().getSpeed();
+			System.out.println(Ec);
+			try{
+				Thread.sleep(100);
+			}catch (Exception e){
+				
+			}
+			if(count%10==0)
+				System.out.println("time: " + time);
+			if(count++ == bruteForceRuns){
 				brute = false;
 				averageTc = time/bruteForceRuns;
-			}*/
+				grid = new LinearGrid(grid.getL(), (int)Math.floor(grid.getL()/(initialSpeed*averageTc)));
+				for(Particle p: particles)
+					grid.insert(p);
+			}
 			calculateTc();
 			simulate(nextCol.getTime());
 			Output.getInstace().write(particles,time);
 			time += nextCol.getTime();
+			count++;
 		}
 	}
 	
@@ -52,47 +68,28 @@ public class Simulation {
 			p.updatePos(time);
 		}
 		nextCol.collide();
-		//calculateNeighbours();
-		//updateParticles();
 	}
 	
 	private void calculateTc(){
-		//if(brute)
+		nextCol = null;
+		if(brute)
 			getBruteTc();
-		//else
-		//	getApproxTc();
+		else
+			getApproxTc();
 	}
 	
 	private void getBruteTc(){
 		Set<Particle> notChecked = new HashSet<>(particles);
-		double L = grid.getL();
+		
 		Collision first = null;
 		for(Particle p: particles){
 			// First check for collisions with box
-			Collision localMin = null;
-			if(p.getV().getXVelocity()>0){
-				localMin = new WallCollision(p,new Position(-1,1),(L-p.getPosition().getX()-p.getradius())/p.getV().getXVelocity());
-			}else if(p.getV().getXVelocity()<0){
-				localMin = new WallCollision(p,new Position(-1,1),(p.getradius()-p.getPosition().getX()/(p.getV().getXVelocity()))); 
-			}
-			if(p.getV().getYVelocity()>0){
-				double yCollisionTime = (L-p.getPosition().getY()-p.getradius())/p.getV().getYVelocity();
-				if(localMin==null || yCollisionTime<localMin.getTime())
-					localMin = new WallCollision(p,new Position(1,-1),yCollisionTime);
-			}else if(p.getV().getYVelocity()<0){
-				double yCollisionTime = (p.getradius()-p.getPosition().getY()/(p.getV().getYVelocity()));
-				if(localMin == null || yCollisionTime<localMin.getTime())
-					localMin = new WallCollision(p,new Position(1,-1),yCollisionTime);
-			}
+			Collision localMin;
+			localMin = getWallTc(p);
 			// Then check for collision with other particles
-			for(Particle p2: notChecked){
-				if(!p2.equals(p)){
-					Double crashTime = getCrashTime(p,p2);
-					if(localMin!=null && crashTime!=null && crashTime<localMin.getTime()){
-						localMin = new ParticlesCollision(p, p2, crashTime);
-					}
-				}
-			}
+			Collision aux = getParticleTc(p,notChecked);
+			if(aux!=null && (localMin==null || aux.getTime()<localMin.getTime()))
+				localMin = aux;
 			notChecked.remove(p);
 			if(first==null || (localMin != null && localMin.getTime() < first.getTime()))
 				first = localMin;
@@ -115,50 +112,27 @@ public class Simulation {
 		return null;
 	}
 	
-	private double getApproxTc(){
-		//TODO
-		return 0;
+	private void getApproxTc(){
+		Collision first = null;
+		for(Particle p: particles){
+			// First check for collisions with box
+			Collision localMin;
+			localMin = getWallTc(p);
+			// Then check for collision with other particles
+			for(Cell adj: grid.getCell(p).getNeighbours()){
+				Collision aux = getParticleTc(p,adj.getParticles());
+				if(aux!=null && (localMin==null || aux.getTime()<localMin.getTime()))
+					localMin = aux;
+			}
+			if(first==null || (localMin != null && localMin.getTime() < first.getTime()))
+				first = localMin;
+		}
+		nextCol = first;
 	}
 	
 	private double scalarProduct(Position pos1, Position pos2){
 		return pos1.getX()*pos2.getX()+pos1.getY()*pos2.getY();
 	}
-	
-	/*private void updateParticles(){
-		for(Particle p: particles){
-			updatePosition(p);
-			double avAngle = getAverageAngle(p);
-			p.setAngle(avAngle + (Math.random()-0.5)*noiseAmp);
-		}
-	}*/
-	
-	
-	/*private void calculateNeighbours(){
-		int M = grid.getM();
-		for(int i=0; i<M; i++){
-			for(int j=0; j<M; j++){
-				for(Particle p1: grid.getCell(i, j).getParticles()){
-					// Checks first for other particles in its same cell
-					for(Particle paux: grid.getCell(i, j).getParticles()){
-						if(!p1.equals(paux)){
-							if(getDistance(p1,paux)<=Rc){
-								addToCondition(p1,paux);
-							}
-						}
-					}
-					// Then checks for particles in adjacent cells
-					for(Cell neighbourCell : grid.getCell(i, j).getNeighbours()){
-						for(Particle p2: neighbourCell.getParticles()){
-							if(getDistance(p1,p2)<=Rc){
-								addToCondition(p1,p2);
-								addToCondition(p2,p1);
-							}	
-						}
-					}
-				}
-			}
-		}
-	}*/
 	
 	private void updateCell(Particle p){
 		double cellLength = grid.getL()/grid.getM();
@@ -188,5 +162,50 @@ public class Simulation {
 		}
 	}
 	
+	public WallCollision getWallTc(Particle p){
+		WallCollision localMin = null;
+		double L = grid.getL();
+		if(p.getV().getXVelocity()>0){
+			localMin = new WallCollision(p,new Position(-1,1),(L-p.getPosition().getX()-p.getradius())/p.getV().getXVelocity());
+		}else if(p.getV().getXVelocity()<0){
+			localMin = new WallCollision(p,new Position(-1,1),(p.getradius()-p.getPosition().getX()/(p.getV().getXVelocity()))); 
+		}
+		if(p.getV().getYVelocity()>0){
+			double yCollisionTime = (L-p.getPosition().getY()-p.getradius())/p.getV().getYVelocity();
+			if(localMin==null || yCollisionTime<localMin.getTime())
+				localMin = new WallCollision(p,new Position(1,-1),yCollisionTime);
+		}else if(p.getV().getYVelocity()<0){
+			double yCollisionTime = (p.getradius()-p.getPosition().getY()/(p.getV().getYVelocity()));
+			if(localMin == null || yCollisionTime<localMin.getTime())
+				localMin = new WallCollision(p,new Position(1,-1),yCollisionTime);
+		}
+		return localMin;
+	}
+	
+	public ParticlesCollision getParticleTc(Particle p, Set<Particle> checkAgainst){
+		ParticlesCollision localMin = null;
+		for(Particle p2: checkAgainst){
+			if(!p2.equals(p)){
+				Double crashTime = getCrashTime(p,p2);
+				if(crashTime!=null ){
+					Position paux = new Position(p.getPosition().getX(),p.getPosition().getY());
+					Position p2aux = new Position(p2.getPosition().getX(),p2.getPosition().getY());
+					p.updatePos(crashTime);
+					p2.updatePos(crashTime);
+					if(localMin==null || (crashTime<localMin.getTime() && validPos(p) && validPos(p2))){
+								localMin = new ParticlesCollision(p, p2, crashTime);
+					}
+					p.setPosition(paux.getX(),paux.getY());
+					p2.setPosition(p2aux.getX(), p2aux.getY());
+				}
+			}
+		}
+		return localMin;
+	}
+	
+	public boolean validPos(Particle p){
+		double L = grid.getL();
+		return p.getPosition().getX()>=p.getradius()&& p.getPosition().getX()<L-p.getradius() && p.getPosition().getY()>=p.getradius() && p.getPosition().getY()<L-p.getradius();
+	}
 
 }
